@@ -1,0 +1,18 @@
+{
+  "name": "linktech-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "The Link Platform monorepo",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @thelink/core",
+    "dev": "npm run dev --workspace @thelink/core",
+    "test": "npm run test --workspace @thelink/core",
+    "lint": "npm run lint --workspace @thelink/core"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
