@@ -56,7 +56,7 @@ export async function GET(req: Request) {
       mediumRiskCount: 3,
       lowRiskCount: 5,
       totalScans: 10,
-      recentScans: [
+      recentScams: [
         {
           input: 'Your FNB account is suspended.',
           riskLevel: 'High',
