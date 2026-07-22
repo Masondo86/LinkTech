@@ -1,52 +1,64 @@
-import Stripe from 'stripe';
+// app/api/digital-footprint/create-checkout-session/route.ts
 import { NextResponse } from 'next/server';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
   try {
     const { email, phone, plan, deviceData } = await req.json();
 
-    // Determine price ID (you'll need to create these in Stripe Dashboard)
-    const priceId = plan === 'email'
-      ? process.env.STRIPE_PRICE_EMAIL_SCAN
-      : process.env.STRIPE_PRICE_FULL_SCAN;
-
-    if (!priceId) {
-      throw new Error('Missing price ID for the selected plan.');
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Store deviceData temporarily (metadata limited to 500 characters)
-    // We'll store it in a database after payment, but for now we'll include in metadata.
-    const deviceSummary = deviceData ? {
-      userAgent: deviceData.userAgent?.substring(0, 100),
-      platform: deviceData.platform,
-      timezone: deviceData.timezone,
-      screen: deviceData.screenResolution,
-    } : {};
+    // Determine amount (in ZAR cents)
+    const amount = plan === 'email' ? 2900 : 5900; // R29 or R59
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription', // or 'payment' for one-time
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/digital-footprint-scanner/result?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/digital-footprint-scanner/check`,
-      metadata: {
-        email,
-        phone: phone || '',
-        plan,
-        deviceSummary: JSON.stringify(deviceSummary),
+    // Paystack secret key
+    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+    if (!secretKey) {
+      console.error('PAYSTACK_SECRET_KEY is not set');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    // Callback URL (where user returns after payment)
+    const callbackUrl = process.env.PAYSTACK_CALLBACK_URL || 'http://localhost:3000/digital-footprint-scanner/results';
+
+    // Prepare metadata
+    const metadata = {
+      email,
+      phone: phone || '',
+      plan,
+      deviceData: deviceData ? JSON.stringify(deviceData) : '',
+    };
+
+    // Initialize transaction with Paystack
+    const response = await fetch('https://api.paystack.co/transaction/initialize', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        email,
+        amount,
+        callback_url: callbackUrl,
+        metadata,
+      }),
     });
 
-    return NextResponse.json({ sessionId: session.id });
+    const data = await response.json();
+
+    if (!data.status) {
+      console.error('Paystack initialization error:', data);
+      return NextResponse.json({ error: 'Failed to initialize payment' }, { status: 500 });
+    }
+
+    // Return the authorization URL and reference
+    return NextResponse.json({
+      authorizationUrl: data.data.authorization_url,
+      reference: data.data.reference,
+    });
   } catch (err) {
     console.error('Checkout session error:', err);
-    return NextResponse.json({ error: 'Failed to create checkout session.' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

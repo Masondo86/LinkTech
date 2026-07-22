@@ -2,14 +2,22 @@
 import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  const { priceId } = await req.json(); // 'price_R29' or 'price_R59'
-
-  const amount = priceId === 'price_R29' ? 2900 : 5900; // in cents
-
   try {
+    const { priceId } = await req.json();
+
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    if (!secretKey) {
+      console.error('[Payment Intent] Missing STRIPE_SECRET_KEY');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    const stripe = new Stripe(secretKey);
+
+    const amount = priceId === 'price_R29' ? 2900 : 5900; // in cents
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'zar',
