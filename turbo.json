@@ -14,11 +14,11 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [
-        ".next/**",
+        "apps/*/.next/**",
         "!.next/cache/**",
         "!.next/dev/**",
-        "dist/**",
-        "!.next/**"
+        "packages/*/dist/**",
+        "!packages/*/dist/**/*.tsbuildinfo"
       ]
     },
     "lint": {
