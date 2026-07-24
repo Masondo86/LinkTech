@@ -1,4 +1,4 @@
-// app/api/digital-footprint/scan/route.ts
+// apps/digital-footprint-scanner/app/api/digital-footprint/scan/route.ts
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
@@ -16,12 +16,20 @@ import { checkPresence } from '@/app/services/trust-signals/presence';
 import { fetchNews } from '@/app/services/trust-signals/news';
 import { searchWeb } from '@/app/services/trust-signals/search';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
+  // Lazy‑init Supabase inside the handler
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('[DFS Scan] Missing Supabase credentials');
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
   try {
     const { reference } = await req.json();
 
@@ -167,12 +175,13 @@ export async function POST(req: Request) {
       trustSignals,
       recommendations,
     });
-  } catch (err) {
-    console.error('[DFS] Scan error:', err);
+  } catch (error) {
+    console.error('[DFS Scan] Error:', error);
     return NextResponse.json({ error: 'Failed to complete scan.' }, { status: 500 });
   }
 }
 
+// Helper functions
 function calculateExternalRiskScore(breachCount: number, isEmailValid: boolean, phoneRiskScore?: number): number {
   let score = 0;
   if (breachCount > 0) score += Math.min(breachCount * 10, 50);

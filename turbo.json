@@ -1,6 +1,14 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "IPQS_API_KEY",
+    "NEXT_PUBLIC_BASE_URL",
+    "PAYSTACK_SECRET_KEY",
+    "NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

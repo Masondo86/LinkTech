@@ -1,3 +1,4 @@
+// apps/trust-dashboard/app/api/profile/route.ts
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
@@ -10,13 +11,20 @@ import {
   type BusinessVerification,
 } from '@linktech/trust-engine';
 
-// Supabase client (uses environment variables)
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
+  // Initialize Supabase client inside the handler
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('[Trust Dashboard] Missing Supabase credentials');
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
   const { searchParams } = new URL(req.url);
   const email = searchParams.get('email');
 
@@ -26,11 +34,8 @@ export async function GET(req: Request) {
 
   try {
     // 1. Fetch scam exposure (from scan_events)
-    // Since scan_events doesn't store email, we can't filter by email.
-    // For now, we'll return a generic sample or aggregate all scans.
-    // In a real implementation, you'd need to link scans to users via a session or account.
-    // For demo purposes, we'll return placeholder data.
-    // Later, you can enhance by using a user ID or authentication.
+    // Note: This will be generic for now as scan_events doesn't store email.
+    // For demonstration, we'll return placeholder data.
 
     // 2. Fetch digital footprint (from digital_footprint_reports)
     const { data: footprintData, error: footprintError } = await supabase
@@ -41,22 +46,16 @@ export async function GET(req: Request) {
       .limit(1);
 
     if (footprintError) {
-      console.error('Error fetching footprint:', footprintError);
+      console.error('[Trust Dashboard] Error fetching footprint:', footprintError);
     }
 
-    // 3. Fetch business verification (from scan_events where type='business' and input_text matches domain)
-    // For demo, we'll use placeholder.
-
-    // 4. Trust signals – we can call the trust signal services (presence, news, search) from here,
-    // but to keep the API fast, we can use cached data or mock it.
-
-    // ---- MOCK DATA for demonstration ----
+    // ---- MOCK DATA for demonstration (updated with correct property names) ----
     const scamExposure: ScamExposure = {
       highRiskCount: 2,
       mediumRiskCount: 3,
       lowRiskCount: 5,
       totalScans: 10,
-      recentScams: [
+      recentScams: [ // ✅ Fixed property name
         {
           input: 'Your FNB account is suspended.',
           riskLevel: 'High',
@@ -115,7 +114,7 @@ export async function GET(req: Request) {
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Profile API error:', error);
+    console.error('[Trust Dashboard] Profile API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
