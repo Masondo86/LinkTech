@@ -1,27 +1,4 @@
 {
-  "builds": [
-    {
-      "src": "apps/digital-footprint-scanner/package.json",
-      "use": "@vercel/next",
-      "config": {
-        "outputDirectory": "apps/digital-footprint-scanner/.next"
-      }
-    },
-    {
-      "src": "apps/trust-dashboard/package.json",
-      "use": "@vercel/next",
-      "config": {
-        "outputDirectory": "apps/trust-dashboard/.next"
-      }
-    },
-    {
-      "src": "apps/scam-verification-engine/package.json",
-      "use": "@vercel/next",
-      "config": {
-        "outputDirectory": "apps/scam-verification-engine/.next"
-      }
-    }
-  ],
   "installCommand": "pnpm install",
   "buildCommand": "pnpm run build",
   "framework": "nextjs"
