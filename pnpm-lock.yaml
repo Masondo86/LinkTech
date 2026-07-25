@@ -121,9 +121,6 @@ importers:
 
   apps/trust-dashboard:
     dependencies:
-      '@linktech/risk-engine':
-        specifier: workspace:*
-        version: link:../../packages/risk-engine
       '@linktech/trust-engine':
         specifier: workspace:*
         version: link:../../packages/trust-engine
