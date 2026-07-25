@@ -12,7 +12,6 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "@supabase/supabase-js": "2.95.0",
-    "@linktech/risk-engine": "workspace:*",
     "@linktech/trust-engine": "workspace:*"
   },
   "devDependencies": {
