@@ -3,14 +3,6 @@
     {
       "src": "apps/digital-footprint-scanner/package.json",
       "use": "@vercel/next"
-    },
-    {
-      "src": "apps/trust-dashboard/package.json",
-      "use": "@vercel/next"
-    },
-    {
-      "src": "apps/scam-verification-engine/package.json",
-      "use": "@vercel/next"
     }
   ],
   "installCommand": "pnpm install",
