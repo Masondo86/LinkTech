@@ -1,20 +1,93 @@
-// apps/trust-dashboard/app/api/profile/route.ts
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-import {
-  calculateUnifiedRiskScore,
-  generateRecommendations,
-  type ScamExposure,
-  type DigitalFootprint,
-  type TrustSignals,
-  type BusinessVerification,
-} from '@linktech/trust-engine';
-
 export const dynamic = 'force-dynamic';
 
+// ---------- LOCAL TYPES (matching the original) ----------
+type ScamExposure = {
+  highRiskCount: number;
+  mediumRiskCount: number;
+  lowRiskCount: number;
+  totalScans: number;
+  recentScams: { input: string; riskLevel: string; date: string; reasons: string[] }[];
+};
+
+type DigitalFootprint = {
+  breaches: any[];
+  emailValid: boolean;
+  phoneRisk: string | null;
+  deviceScore: number | null;
+  lastScanDate: string | null;
+};
+
+type TrustSignals = {
+  presenceCount: number;
+  negativeNews: number;
+  positiveNews: number;
+  negativeSearch: number;
+  positiveSearch: number;
+};
+
+type BusinessVerification = {
+  fscaRegistered: boolean;
+  ncrRegistered: boolean;
+  details: string;
+};
+
+// ---------- LOCAL HELPER FUNCTIONS (replacing @linktech/trust-engine) ----------
+function calculateUnifiedRiskScore(
+  scamExposure: ScamExposure,
+  footprint: DigitalFootprint,
+  trustSignals: TrustSignals,
+  businessVerification: BusinessVerification
+): { score: number; level: string } {
+  // Simple heuristic – you can replace with your own logic later
+  let score = 0;
+  if (scamExposure.highRiskCount > 0) score += 30;
+  if (scamExposure.mediumRiskCount > 0) score += 15;
+  if (footprint.breaches && footprint.breaches.length > 0) score += 20;
+  if (!footprint.emailValid) score += 10;
+  if (trustSignals.negativeNews > 0) score += 10;
+  if (!businessVerification.fscaRegistered) score += 5;
+  if (!businessVerification.ncrRegistered) score += 5;
+  score = Math.min(score, 100);
+
+  let level = 'Low';
+  if (score > 70) level = 'High';
+  else if (score > 40) level = 'Medium';
+  return { score, level };
+}
+
+function generateRecommendations(
+  scamExposure: ScamExposure,
+  footprint: DigitalFootprint,
+  trustSignals: TrustSignals,
+  businessVerification: BusinessVerification
+): string[] {
+  const recs: string[] = [];
+  if (scamExposure.highRiskCount > 0) {
+    recs.push('You have recent high‑risk scans. Review them and avoid engaging with those senders.');
+  }
+  if (footprint.breaches && footprint.breaches.length > 0) {
+    recs.push('Your email appears in data breaches. Change your passwords and enable 2FA.');
+  }
+  if (!footprint.emailValid) {
+    recs.push('Your email address may be invalid – check with your provider.');
+  }
+  if (trustSignals.negativeNews > 0) {
+    recs.push('There is negative news about your digital identity. Investigate further.');
+  }
+  if (!businessVerification.fscaRegistered && !businessVerification.ncrRegistered) {
+    recs.push('Consider registering your business with FSCA or NCR to build trust.');
+  }
+  if (recs.length === 0) {
+    recs.push('Your digital profile looks clean. Keep up the good work!');
+  }
+  return recs;
+}
+
+// ---------- API ROUTE HANDLER ----------
 export async function GET(req: Request) {
-  // Initialize Supabase client inside the handler
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -33,11 +106,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    // 1. Fetch scam exposure (from scan_events)
-    // Note: This will be generic for now as scan_events doesn't store email.
-    // For demonstration, we'll return placeholder data.
-
-    // 2. Fetch digital footprint (from digital_footprint_reports)
+    // 1. Fetch digital footprint from Supabase (if any)
     const { data: footprintData, error: footprintError } = await supabase
       .from('digital_footprint_reports')
       .select('*')
@@ -49,13 +118,13 @@ export async function GET(req: Request) {
       console.error('[Trust Dashboard] Error fetching footprint:', footprintError);
     }
 
-    // ---- MOCK DATA for demonstration (updated with correct property names) ----
+    // 2. Build mock data (replace with real data later)
     const scamExposure: ScamExposure = {
       highRiskCount: 2,
       mediumRiskCount: 3,
       lowRiskCount: 5,
       totalScans: 10,
-      recentScams: [ // ✅ Fixed property name
+      recentScams: [
         {
           input: 'Your FNB account is suspended.',
           riskLevel: 'High',
@@ -87,7 +156,7 @@ export async function GET(req: Request) {
       details: 'NCRCP12345',
     };
 
-    // Calculate unified score
+    // 3. Calculate score and recommendations using local functions
     const { score, level } = calculateUnifiedRiskScore(
       scamExposure,
       footprint,
@@ -102,6 +171,7 @@ export async function GET(req: Request) {
       businessVerification
     );
 
+    // 4. Return the response
     return NextResponse.json({
       email,
       unifiedRiskScore: score,
