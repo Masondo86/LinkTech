@@ -3,12 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   staticPageGenerationTimeout: 180,
 
-  // 👇 CRITICAL – use the subdomain for asset loading
-  assetPrefix: 'https://footprint.checkascam.co.za',
-
-  // 👇 Tell Next.js where the monorepo root is (for proper tracing)
-  outputFileTracingRoot: process.cwd(), // or path.join(__dirname, '../..')
-
+  
   async headers() {
     return [
       {
@@ -24,16 +19,11 @@ const nextConfig = {
   },
 
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "**" }
-    ]
+    remotePatterns: [{ protocol: "https", hostname: "**" }]
   },
 
   eslint: { ignoreDuringBuilds: false },
-  typescript: { ignoreBuildErrors: false },
-
-  // 🛑 REMOVE output: "standalone" – Vercel handles this automatically.
-  // productionBrowserSourceMaps: false, // optional, keep if you want
+  typescript: { ignoreBuildErrors: false }
 };
 
 module.exports = nextConfig;
